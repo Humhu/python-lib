@@ -244,6 +244,6 @@ if __name__ == '__main__':
     try:        
         loop()
         
-    except e:
+    except Exception as e:
         print e
         
