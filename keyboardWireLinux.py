@@ -1,4 +1,4 @@
-import time, sys, msvcrt
+import time, sys, tty, termios
 from struct import *
 from serial import *
 from math import *
@@ -52,7 +52,7 @@ class KeyboardInterface(object):
         self.roll_rate = IncrementCounter( start_value = 0.0, range = (10.0, -10.0), increment = 0.25 )    
         # Actuator state
         self.elevator = IncrementCounter( start_value = 0.0, range = (1.0, -1.0), increment = 0.2 )
-        self.thrust = IncrementCounter( start_value = 0.0, range = (1.0, 0.0), increment = 0.025 )
+        self.thrust = IncrementCounter( start_value = 0.0, range = (0.2, 0.0), increment = 0.025 ) #RESTORE upper limit
         self.steer = IncrementCounter( start_value = 0.0, range = (1.0, -1.0), increment = 0.05 )        
         # PID constants        
         self.yaw_coeffs = [ 0.0,    0.0,    -2.0,   -0.0,    -0.2,    1.0,    1.0] # For steer Ki 0.8
@@ -70,11 +70,12 @@ class KeyboardInterface(object):
         
     def process(self, c):
     
-        if c not None
+        if(c != None):
             self.__handleKey(c)
-            
-        if self.pinging:
-            self.comm.sendPing();                
+        
+        # TODO: Add the pinging functionality back in    
+        #if self.pinging:
+        #    self.comm.sendPing();                
             
     def __handleKey(self, c):
             
@@ -137,15 +138,15 @@ class KeyboardInterface(object):
             self.comm.setRegulatorRateFilter( self.yaw_filter_coeffs )
             self.comm.setTelemetrySubsample(1)
         elif c == ']':
-            #self.thrust.increase()
-            #self.rc_changed = True
-            self.roll_coeffs[1] += 0.025
-            print "Thrust: " + str(self.roll_coeffs[1])
+            self.thrust.increase()
+            self.rc_changed = True
+            #self.roll_coeffs[1] += 0.025
+            #print "Thrust: " + str(self.roll_coeffs[1])
         elif c == '[':
-            #self.thrust.decrease()
-            #self.rc_changed = True
-            self.roll_coeffs[1] = self.roll_coeffs[1] - 0.025
-            print "Thrust: " + str(self.roll_coeffs[1])
+            self.thrust.decrease()
+            self.rc_changed = True
+            #self.roll_coeffs[1] = self.roll_coeffs[1] - 0.025
+            #print "Thrust: " + str(self.roll_coeffs[1])
         elif c == '\x1b': #Esc key
             #break
             raise Exception('Exit')
@@ -216,10 +217,16 @@ def loop():
     
     while True:
 
-        try:
-            c = None
-            if( msvcrt.kbhit() ):
-                c = msvcrt.getch()
+        try:   
+            # Copied from code.activestate.com/recipes/134892/
+            # TODO: Find a way to avoid this blocking call
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                c = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)             
             kbint.process(c)
             time.sleep(0.01)
             #comm.sendPing()

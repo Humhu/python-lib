@@ -1,4 +1,4 @@
-import time, sys, msvcrt
+import time, sys
 from struct import *
 from serial import *
 from xbee import XBee
