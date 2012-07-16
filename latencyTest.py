@@ -4,7 +4,7 @@ from serial import *
 from xbee import XBee
 from datetime import *
 from lib.payload import Payload
-from lib.commandinterface import CommandInterface
+from lib.command_interface import CommandInterface
 
 def txCallback(dest, packet):
 	global xb

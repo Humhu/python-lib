@@ -4,16 +4,17 @@ from serial import *
 from xbee import XBee
 from lib import network_const
 from lib.dictionaries import *
-from lib.commandinterface import CommandInterface
+from lib.command_interface import CommandInterface
+from lib.network_coordinator import NetworkCoordinator
 
-THRUST_INCREMENT = 2.5
-YAW_INCREMENT = -5.0
+THRUST_INCREMENT = 0.05
+YAW_INCREMENT = -0.5
 ELEVATOR_INCREMENT = 0.2
 
-THRUST_UPPER_LIMIT = 100.0
+THRUST_UPPER_LIMIT = 1.0
 THRUST_LOWER_LIMIT = 0.0
-YAW_UPPER_LIMIT = 100.0
-YAW_LOWER_LIMIT = -100.0
+YAW_UPPER_LIMIT = 1.0
+YAW_LOWER_LIMIT = -1.0
 ELEVATOR_UPPER_LIMIT = 1.0
 ELEVATOR_LOWER_LIMIT = -1.0
         
@@ -21,12 +22,12 @@ def txCallback(dest, packet):
     global xb
     xb.tx(dest_addr = dest, data = packet)
     
-if __name__ == '__main__':
+def loop():
 
     DEFAULT_COM_PORT = 'COM7'
     DEFAULT_BAUD_RATE = 57600
     DEFAULT_ADDRESS = '\x10\x21'
-    DEFAULT_PAN = network_const.ACTIVE_CLIENT_PAN
+    DEFAULT_PAN = '\x10\x01'
     
     
     if len(sys.argv) == 1:
@@ -47,10 +48,7 @@ if __name__ == '__main__':
     ser = Serial(port = com, baudrate = baud) 
     xb = XBee(ser)
     print "Setting PAN ID to " + hex(DEFAULT_PAN)
-    xb.at(command = 'ID', parameter = pack('>H', DEFAULT_PAN))
-    
-    # Enable RC
-    coord.setRegulatorState(RegulatorStates['Remote Control'])
+    xb.at(command = 'ID', parameter = pack('>H', DEFAULT_PAN))         
     
     thrust = 0.0
     yaw = 0.0
@@ -81,7 +79,7 @@ if __name__ == '__main__':
             elif c == 'e':
                 break
             elif c == 't':
-                coord.setRegulatorState(RegulatorStates['Remote Control'])            
+                coord.setRegulatorMode(RegulatorStates['Remote Control'])            
                 
             if thrust > THRUST_UPPER_LIMIT:
                 thrust = THRUST_UPPER_LIMIT
@@ -107,3 +105,12 @@ if __name__ == '__main__':
                     
     xb.halt()
     ser.close()
+
+if __name__ == '__main__':
+
+    try:
+        loop()
+
+    except:
+        pass
+        
