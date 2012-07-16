@@ -23,6 +23,13 @@ class CommandInterface(object):
     def disableDebug(self):
         self.debugPrint = False
 
+    def runGyroCalib(self, samples):
+        data_pack = pack('H', samples)
+        if self.debugPrint:
+            print "Requesting gyro calibration of " + str(samples) + " samples."           
+        pld = Payload(data = data_pack, status = 0, type = Commands['RUN_GYRO_CALIB'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+        
     def getGyroCalibParam(self):
         data_pack = pack('H', 0)
         if self.debugPrint:
@@ -67,26 +74,45 @@ class CommandInterface(object):
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
         
     def setRegulatorRef(self, ref):
-        data_pack = pack(3*'f', *ref)
+        data_pack = pack(4*'f', *ref)
         if self.debugPrint:
-            print "Setting [yaw, pitch, roll] references to " + str(ref) + " radians."
+            print "Setting quaternion reference to: " + str(ref)
         pld = Payload(data = data_pack, status = 0, type = Commands['SET_REGULATOR_REF'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
     
     def setRegulatorPid(self, coeffs):
         data_pack = pack(3*'7f', *coeffs)
         if self.debugPrint:
-            print "Setting yaw PID coefficents of " + str(coeffs)
+            print ("Setting PID coefficents to: \n" + \
+                    "\tOffset Kp Ki Kd\n" + \
+                    "Yaw: " + str(coeffs[1:5]) + "\n" + \
+                    "Pitch: " + str(coeffs[8:12]) + "\n" + \
+                    "Roll: " + str(coeffs[15:19]))
         pld = Payload(data = data_pack, status = 0, type = Commands['SET_REGULATOR_PID'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
     
-    def setRegulatorRateFilter(self, order, filter_coeffs):    
-        data_pack = pack(3*'2B8f', *filter_coeffs)
+    def setRegulatorRateFilter(self, filter_coeffs):    
+        data_pack = pack('2H8f', *filter_coeffs)
         if self.debugPrint:
-            print "Setting " + str(order) + "-order yaw filter coefficients of " + str(filter_coeffs)
+            print "Setting filter coefficients of " + str(filter_coeffs)
         pld = Payload(data = data_pack, status = 0, type = Commands['SET_REGULATOR_RATE_FILTER'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
             
+    def setRateMode(self, flag):
+        data_pack = pack('B', flag)
+        if self.debugPrint:
+            print "Setting rate mode to: " + str(flag)
+        pld = Payload(data = data_pack, status = 0, type = Commands['SET_RATE_MODE'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+    
+    def setGlobalRateSlew(self, rate):
+        data_pack = pack('3f', *rate)
+        if self.debugPrint:
+            print "Setting rate slew to: " + str(rate)
+        pld = Payload(data = data_pack, status = 0, type = Commands['SET_RATE_SLEW'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+    
+    
     def setEstimateRunning(self, mode):
         data_pack = pack('B', mode)
         if self.debugPrint:
@@ -94,11 +120,11 @@ class CommandInterface(object):
         pld = Payload(data = data_pack, status = 0, type = Commands['SET_ESTIMATE_RUNNING'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
     
-    def setRegulatorState(self, flag):        
+    def setRegulatorMode(self, flag):        
         data_pack = pack('B', flag)
         if self.debugPrint:
             print "Setting regulator state to " + str(flag)
-        pld = Payload(data = data_pack, status = 0, type = Commands['SET_REGULATOR_STATE'])
+        pld = Payload(data = data_pack, status = 0, type = Commands['SET_REGULATOR_MODE'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
     
     def setRemoteControlValues(self, thrust, steer, elevator):        
@@ -142,6 +168,20 @@ class CommandInterface(object):
         if self.debugPrint:
             print "Setting high pass to " + str(flag)
         pld = Payload(data = data_pack, status = 0, type = Commands['SET_HP'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+
+    def zeroEstimate(self):
+        data_pack = pack('H', 0)
+        if self.debugPrint:
+            print "Zeroing attitude estimate."
+        pld = Payload(data = data_pack, status = 0, type = Commands['ZERO_ESTIMATE'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+        
+    def requestAttitude(self):
+        data_pack = pack('H', 0)
+        if self.debugPrint:
+            print "Requesting attitude."
+        pld = Payload(data = data_pack, status = 0, type = Commands['REQUEST_ATTITUDE'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
         
     def processPacket(self, packet):

@@ -1,12 +1,12 @@
-# Behavior constants defined here
+import math
 
 YawPIDParams = {
 
     'Ref':0,
     'Offset':0,
-    'Kp':20,
-    'Ki':10,
-    'Kd':18,
+    'Kp':13.0,
+    'Ki':0,
+    'Kd':0.001,
     'Beta':1,
     'Gamma':0
 
@@ -14,11 +14,11 @@ YawPIDParams = {
 
 PitchPIDParams = {
 
-    'Ref':0.78,
-    'Offset':80,
-    'Kp':20,
-    'Ki':4,
-    'Kd':6,
+    'Ref':0,
+    'Offset':0.0,
+    'Kp':-10.0,
+    'Ki':0,
+    'Kd':-0.02,#-0.01
     'Beta':1,
     'Gamma':0
 
@@ -55,12 +55,15 @@ Commands = {
     
     'ECHO':0x1F,      # send back the received packet
 
-	'SET_REGULATOR_STATE':0x21,
+	'SET_REGULATOR_MODE':0x21,
 	'SET_REGULATOR_REF':0x22,
 	'SET_REGULATOR_PID':0x23,
 	'SET_REGULATOR_RATE_FILTER':0x24,
     'SET_RC_VALUES':0x25,
 
+    'SET_RATE_MODE':0x26,
+    'SET_RATE_SLEW':0x27,
+    
     'RECORD_SENSOR_DUMP':0x28,
     'GET_MEM_CONTENTS':0x29,
 	'RUN_GYRO_CALIB':0x2A,
@@ -91,4 +94,9 @@ Commands = {
     'CAM_PARAM_RESPONSE':0x49,
     
     'SET_HP':0x4A,
+    
+    'ZERO_ESTIMATE':0x4C,
+    
+    'REQUEST_ATTITUDE':0x50,
+    'RESPONSE_ATTITUDE':0x51,
 }

@@ -1,9 +1,8 @@
-import time, sys, math
+import time, sys, math, datetime
 from struct import *
 from serial import *
 from xbee import XBee
 from payload import Payload
-from datetime import *
 from dictionaries import *
 from commandinterface import CommandInterface
 from bams import *
@@ -18,7 +17,9 @@ class TelemetryReader(object):
         self.fprint = False;
         self.cprint = False;
         self.file = None;
-        self.packets_received = 0;    
+        
+        self.last_packet_time = time.time()
+        self.packets_received = 0
             
     def setConsoleMode(self, mode):
         print "Settinng console write mode to: " + str(mode)
@@ -28,7 +29,7 @@ class TelemetryReader(object):
         print "Setting file write mode to: " + str(mode)
         self.fprint = mode;
         if((mode == True) & (self.file == None)):
-            today = datetime.today()
+            today = datetime.datetime.today()
             d = str(today.year) + "_" + str(today.month) + "_" + str(today.day)
             t = str(today.hour) + "_" + str(today.minute) + "_" + str(today.second)
             fname = d + '-' + t + '.txt'
@@ -37,7 +38,10 @@ class TelemetryReader(object):
     def writeHeader(self):
         if(self.file != None):
             self.file.write("Timestamp\t")
-            self.file.write("Gyro data\t\t\t\n")            
+            self.file.write("Ref\t\t\t")            
+            self.file.write("Pose\t\t\t")            
+            self.file.write("Err\t\t\t")            
+            self.file.write("U\t\t\n")            
             
     def writeLine(self, str):
         if(self.file != None):
@@ -49,7 +53,7 @@ class TelemetryReader(object):
             self.file = None
         
     def processPacket(self, packet):
-        
+                
         addr_data = (packet.get('source_addr'))[0:2]
         addr = (unpack('>H', addr_data))[0]
         
@@ -61,9 +65,19 @@ class TelemetryReader(object):
             self._decodePacket(packet)
             self.packets_received += 1;
             
+            now = time.time()
+            if(now - self.last_packet_time) == 0:
+                frequency = 0.0
+            else:
+                frequency = 1.0/(now - self.last_packet_time)
+            self.last_packet_time = now;
+            
             if(self.cprint):
                 print "Packets received: " + str(self.packets_received)
-                            
+                print "Frequency of: " + str(frequency)
+            
+            
+            
         except Exception as e:
             print e
         
@@ -119,32 +133,49 @@ class TelemetryReader(object):
                 
         elif type == Commands['RESPONSE_TELEMETRY']:
             
-            if(len(data) != 18):
+            if(len(data) != 64):
                 print "Invalid RESPONSE_TELEMETRY packet of length " + str(len(data))
                 return
                 
-            raw = unpack('L3H4h', data)
-            timestamp = raw[0]
-            pose = raw[1:4]
-            gyro = raw[4:8]
-      
-            eulers = []
-            eulers.append(int(bams16toDeg(pose[0])))
-            eulers.append(int(bams16toDeg(pose[1])))
-            eulers.append(int(bams16toDeg(pose[2])))
+            raw = unpack('4f4f4f3fL', data)
+            
+            ref = raw[0:4]
+            x = raw[4:8]
+            err = raw[8:12]
+            u = raw[12:15]
+            timestamp = raw[15]
+            # timestamp = raw[0]
+            # ref = raw[1:5]
+            # x = raw[5:9]
+            # err = raw[9:13]
+            # u = raw[13:16]
             
             if(self.cprint == True):
                 print "Timestamp: " + str(timestamp)
-                print "Yaw: " + str(eulers[0]) + " pitch: " + str(eulers[1]) + " roll: " + str(eulers[2])
-                print "Gyro temp: " + str((13200 + gyro[0])/280 + 35) + " Values: " + str(gyro[1:4])
-
+                print "Ref: " + str(ref)
+                print "X: " + str(x)
+                print "Err: " + str(err)
+                print "U: " + str(u)
+                
             if(self.fprint == True):
                 self.file.write(str(timestamp) + "\t")
-                self.file.write(str(gyro[0]) + "\t")
-                self.file.write(str(gyro[1]) + "\t")
-                self.file.write(str(gyro[2]) + "\t")
-                self.file.write(str(gyro[3]) + "\n")
+                self.file.write(str(ref[0]) + "\t" + str(ref[1]) + "\t" + \
+                                str(ref[2]) + "\t" + str(ref[3]) + "\t")
+                self.file.write(str(x[0]) + "\t" + str(x[1]) + "\t" + \
+                                str(x[2]) + "\t" + str(x[3]) + "\t")
+                self.file.write(str(err[0]) + "\t" + str(err[1]) + "\t" + \
+                                str(err[2]) + "\t" + str(err[3]) + "\t")
+                self.file.write(str(u[0]) + "\t" + str(u[1]) + "\t" + \
+                                str(u[2]) + "\n")
                 
+        elif type == Commands['RESPONSE_ATTITUDE']:
+            if(len(data) != 16):
+                print "Invalid RESPONSE_ATTITUDE packet of length " + str(len(data))
+            raw = unpack('4f', data);
+            
+            if(self.cprint == True):
+                print "Quat: " + str(raw)
+            
         elif type == Commands['CAM_PARAM_RESPONSE']:
             
             if(len(data) != 12):
@@ -194,3 +225,6 @@ class TelemetryReader(object):
             if(self.cprint == True):
                 print("Commanded thrust: " + str(thrust) + " steer: " + str(steer) + "\n")
             
+        else:
+            
+            print "Invalid command of: " + str(type)
