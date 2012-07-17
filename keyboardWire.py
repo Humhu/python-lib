@@ -56,7 +56,7 @@ class KeyboardInterface(object):
         self.steer = IncrementCounter( start_value = 0.0, range = (1.0, -1.0), increment = 0.05 )        
         # PID constants        
         self.yaw_coeffs = [ 0.0,    0.0,    1.5,   0.0,    0.18,    1.0,    1.0]
-        self.pitch_coeffs = [ 0.0,    0.0,    -3.0,   0.0,    -0.3,    1.0,    1.0] #Kp = -0.8
+        self.pitch_coeffs = [ 0.0,    0.0,    3.0,   0.0,    0.3,    1.0,    1.0] #Kp = -0.8
         self.roll_coeffs = [ 0.0,    0.0,    0.0,   0.0,    0.0,    1.0,    1.0]        
         self.yaw_filter_coeffs = [ 3, 0, 0.0007, 0.0021, 0.0021, 0.0007, 1.0, 2.6861573965, -2.419655111, 0.7301653453]
         # self.yaw_filter_coeffs = [ 3, 0, 56.0701e-6, 168.2103e-6, 168.2103e-6, 56.0701e-6, 1, -2.8430, 2.6980, -0.8546]
@@ -84,9 +84,11 @@ class KeyboardInterface(object):
             self.ref_changed = True
         elif c == 'a':
             self.yaw_rate.increase()    
+            #self.roll_rate.increase()    
             self.rate_changed = True
         elif c == 'd':
             self.yaw_rate.decrease()            
+            #self.roll_rate.increase()    
             self.rate_changed = True
         elif c == 'q':
             self.roll.increase()
@@ -100,7 +102,7 @@ class KeyboardInterface(object):
         elif c == 'f':                
             self.comm.startSensorDump(0)
         elif c == 'v':
-            self.comm.requestDumpData(0x80, 0x80 + 600, 64)            
+            self.comm.requestDumpData(0x80 + 0, 0x80 + 400, 64)            
         elif c == 't':
             self.comm.requestTelemetry()        
         elif c == 'y':
@@ -155,17 +157,19 @@ def txCallback(dest, packet):
     global xb
     xb.tx(dest_addr = dest, data = packet)    
     
-def rxCallback(dest, packet):
+def rxCallback(packet):
     global telem, coord
     telem.processPacket(packet)
     coord.processPacket(packet)
     
 def loop():
 
+    global xb, telem, coord
+
     DEFAULT_COM_PORT = 'COM7'
     DEFAULT_BAUD_RATE = 57600
     DEFAULT_ADDRESS = '\x10\x21'
-    DEFAULT_PAN = 0x1021
+    DEFAULT_PAN = 0x1001
     
     if len(sys.argv) == 1:
         com = DEFAULT_COM_PORT
@@ -188,9 +192,10 @@ def loop():
     telem.setConsoleMode(True)
     telem.setFileMode(True)
     telem.writeHeader()
+    coord.resume()
     
     ser = Serial(port = com, baudrate = baud) 
-    xb = XBee(ser, callback = telem.processPacket)
+    xb = XBee(ser, callback = rxCallback)
     print "Setting PAN ID to " + hex(DEFAULT_PAN)
     xb.at(command = 'ID', parameter = pack('>H', DEFAULT_PAN))         
 
@@ -215,3 +220,4 @@ if __name__ == '__main__':
         
     except:
         pass
+        
