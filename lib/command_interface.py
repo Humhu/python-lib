@@ -36,6 +36,13 @@ class CommandInterface(object):
             print "Requesting gyro offsets..."
         pld = Payload(data = data_pack, status = 0, type = Commands['GET_GYRO_CALIB_PARAM'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+
+    def setTelemetrySubsample(self, period):
+        data_pack = pack('H', period)
+        if self.debugPrint:
+            print "Setting telemetry subsample period to " + str(period)
+        pld = Payload(data = data_pack, status = 0, type = Commands['SET_TELEM_SUBSAMPLE'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
         
     def startSensorDump(self, datasets):
         data_pack = pack('H', datasets)
