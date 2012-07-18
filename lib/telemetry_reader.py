@@ -4,7 +4,7 @@ from serial import *
 from xbee import XBee
 from payload import Payload
 from dictionaries import *
-from commandinterface import CommandInterface
+from command_interface import CommandInterface
 from bams import *
 
 class TelemetryReader(object):
@@ -58,7 +58,7 @@ class TelemetryReader(object):
         addr = (unpack('>H', addr_data))[0]
         
         if(addr_data != self.endpoint_addr):
-            print "Incorrect source" + str(addr)
+            print "Incorrect source: " + str(addr)
             return
         
         try:
