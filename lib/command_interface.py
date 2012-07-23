@@ -148,11 +148,18 @@ class CommandInterface(object):
             print "Requesting telemetry data..."
         pld = Payload(data = data_pack, status = 0, type = Commands['REQUEST_TELEMETRY'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
-        
+    
     def sendPing(self):
         data_pack = pack('H', 0)
         if self.debugPrint:
             print "Pinging..."
+        pld = Payload(data = data_pack, status = 0, type = Commands['PING'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+    
+    def sendEcho(self):
+        data_pack = pack('H', 0)
+        if self.debugPrint:
+            print "Requesting echo..."
         pld = Payload(data = data_pack, status = 0, type = Commands['ECHO'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
         
@@ -190,8 +197,15 @@ class CommandInterface(object):
             print "Requesting attitude."
         pld = Payload(data = data_pack, status = 0, type = Commands['REQUEST_ATTITUDE'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
-        
+
+    def setSlewLimit(self, limit):
+        data_pack = pack('f', limit)
+        if self.debugPrint:
+            print "Setting slew rate limit to: " + str(limit) + " radians/sec."
+        pld = Payload(data = data_pack, status = 0, type = Commands['SET_SLEW_LIMIT'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+                
     def processPacket(self, packet):
-        print "Hi!"
+        print "Command interface objects don't need to process packets."
         pass
     
