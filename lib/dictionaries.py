@@ -52,7 +52,7 @@ RegulatorStates = {
 }
 
 Commands = {	
-    
+    'PING':0x1E,
     'ECHO':0x1F,      # send back the received packet
 
 	'SET_REGULATOR_MODE':0x21,
@@ -99,4 +99,6 @@ Commands = {
     
     'REQUEST_ATTITUDE':0x50,
     'RESPONSE_ATTITUDE':0x51,
+    'SET_TELEM_SUBSAMPLE':0x52,
+    'SET_SLEW_LIMIT':0x53,
 }
