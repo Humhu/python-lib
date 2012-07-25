@@ -55,9 +55,9 @@ class KeyboardInterface(object):
         self.thrust = IncrementCounter( start_value = 0.0, range = (1.0, 0.0), increment = 0.025 )
         self.steer = IncrementCounter( start_value = 0.0, range = (1.0, -1.0), increment = 0.05 )        
         # PID constants        
-        self.yaw_coeffs = [ 0.0,    0.0,    1.5,   0.0,    0.18,    1.0,    1.0]
-        self.pitch_coeffs = [ 0.0,    0.0,    3.0,   0.0,    0.3,    1.0,    1.0] #Kp = -0.8
-        self.roll_coeffs = [ 0.0,    0.0,    0.0,   0.0,    0.0,    1.0,    1.0]        
+        self.yaw_coeffs = [ 0.0,    0.0,    -2.0,   -0.0,    -0.2,    1.0,    1.0] # For steer Ki 0.8
+        self.pitch_coeffs = [ 0.0,    0.0,    3.0,   0.0,    0.2,    1.0,    1.0] # For elevator
+        self.roll_coeffs = [ 0.0,    0.0,    -0.2,   0.0,    0.0,    1.0,    1.0] # For thrust 
         self.yaw_filter_coeffs = [ 3, 0, 0.0007, 0.0021, 0.0021, 0.0007, 1.0, 2.6861573965, -2.419655111, 0.7301653453]
         # self.yaw_filter_coeffs = [ 3, 0, 56.0701e-6, 168.2103e-6, 168.2103e-6, 56.0701e-6, 1, -2.8430, 2.6980, -0.8546]
         # State                               
@@ -66,12 +66,16 @@ class KeyboardInterface(object):
         self.rc_changed = False
         self.ref_changed = False
         self.rate_changed = False    
-
+        self.pinging = False        
+        
     def process(self):
     
         if msvcrt.kbhit():
             c = msvcrt.getch()
             self.__handleKey(c)
+            
+        if self.pinging:
+            self.comm.sendPing();                
             
     def __handleKey(self, c):
             
@@ -83,13 +87,15 @@ class KeyboardInterface(object):
             self.pitch.decrease()
             self.ref_changed = True
         elif c == 'a':
-            self.yaw_rate.increase()    
-            #self.roll_rate.increase()    
-            self.rate_changed = True
+            self.yaw.decrease()
+            self.ref_changed = True
+            # self.yaw_rate.decrease()                
+            # self.rate_changed = True
         elif c == 'd':
-            self.yaw_rate.decrease()            
-            #self.roll_rate.increase()    
-            self.rate_changed = True
+            self.yaw.increase()
+            self.ref_changed = True
+            # self.yaw_rate.increase()            
+            # self.rate_changed = True
         elif c == 'q':
             self.roll.increase()
             self.ref_changed = True
@@ -102,7 +108,7 @@ class KeyboardInterface(object):
         elif c == 'f':                
             self.comm.startSensorDump(0)
         elif c == 'v':
-            self.comm.requestDumpData(0x80 + 0, 0x80 + 400, 64)            
+            self.comm.requestDumpData(0x80 + 0, 0x80 + 600, 66)            
         elif c == 't':
             self.comm.requestTelemetry()        
         elif c == 'y':
@@ -116,8 +122,11 @@ class KeyboardInterface(object):
         elif c == '3':                
             self.comm.setRegulatorMode(RegulatorStates['Remote Control'])                    
         elif c == '4':
-            self.comm.setRateMode(self.rate_control)            
             self.rate_control = not self.rate_control           
+            self.comm.setRateMode(self.rate_control)                        
+        elif c == '0':
+            self.pinging = not self.pinging
+            
         # Attitude
         elif c == 'c':
             self.comm.runGyroCalib(1000);            
@@ -127,12 +136,17 @@ class KeyboardInterface(object):
         elif c == 'p':                
             self.comm.setRegulatorPid( self.yaw_coeffs + self.pitch_coeffs + self.roll_coeffs )                                
             self.comm.setRegulatorRateFilter( self.yaw_filter_coeffs )
+            self.comm.setTelemetrySubsample(1)
         elif c == ']':
-            self.thrust.increase()
-            self.rc_changed = True
+            #self.thrust.increase()
+            #self.rc_changed = True
+            self.roll_coeffs[1] += 0.025
+            print "Thrust: " + str(self.roll_coeffs[1])
         elif c == '[':
-            self.thrust.decrease()
-            self.rc_changed = True
+            #self.thrust.decrease()
+            #self.rc_changed = True
+            self.roll_coeffs[1] = self.roll_coeffs[1] - 0.025
+            print "Thrust: " + str(self.roll_coeffs[1])
         elif c == '\x1b': #Esc key
             #break
             raise Exception('Exit')
@@ -182,7 +196,12 @@ def loop():
     else:
         print "Wrong number of arguments. Must be: COM BAUD ADDR"
         sys.exit(1)
-                
+    
+    ser = Serial(port = com, baudrate = baud) 
+    xb = XBee(ser, callback = rxCallback)
+    print "Setting PAN ID to " + hex(DEFAULT_PAN)
+    xb.at(command = 'ID', parameter = pack('>H', DEFAULT_PAN))                 
+    
     comm = CommandInterface(addr, txCallback)
     telem = TelemetryReader(addr, txCallback)
     kbint = KeyboardInterface(comm)
@@ -194,16 +213,14 @@ def loop():
     telem.writeHeader()
     coord.resume()
     
-    ser = Serial(port = com, baudrate = baud) 
-    xb = XBee(ser, callback = rxCallback)
-    print "Setting PAN ID to " + hex(DEFAULT_PAN)
-    xb.at(command = 'ID', parameter = pack('>H', DEFAULT_PAN))         
-
+    comm.setSlewLimit(1.0)
+    
     while True:
 
         try:                
             kbint.process()
-            time.sleep(0.05)
+            time.sleep(0.01)
+            #comm.sendPing()
     
         except:        
             break
@@ -218,6 +235,6 @@ if __name__ == '__main__':
     try:        
         loop()
         
-    except:
-        pass
+    except e:
+        print e
         

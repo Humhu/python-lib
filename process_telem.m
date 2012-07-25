@@ -1,9 +1,11 @@
 time = data(:,1);       % First column is timestamps
 ref = data(:,2:5);      % Next 4 columns reference quaternion [w, x, y, z]
-pose = data(:,6:9);    % Next 4 columns pose quaternion [w, x, y, z]
+pose = data(:,6:9);     % Next 4 columns pose quaternion [w, x, y, z]
 err = data(:,10:13);    % Next 4 columns error quaternion [w, x, y, z]
 u = data(:,14:16);      % Last 3 columns actuator [thrust, steer, elevator]
-
+ed = data(:,17);        % Energy Detect from radio - only updates on reception
+rssi = data(:,18);      % Probably not useful
+    
 time = time - time(1);  % Subtract offset and scale
 time = time/625E3;      % 625 ticks per millisecond
 
@@ -29,8 +31,8 @@ ylabel('Quaternion component');
 title('Raw Error vs. Time')
 
 figure;
-plot(time, err(:,3), 'b.', time, u(:,3), '-r.')
-legend('Pitch Error', 'Elevator Output')
+plot(time, err(:,3), 'b.', time, u(:,3), '-r.', time, u(:,1), '-g.')
+legend('Pitch Error', 'Elevator Output', 'Thrust')
 xlabel('Time, t (sec)');
 title('Pitch Control Trace')
 
