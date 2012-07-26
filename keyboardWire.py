@@ -64,13 +64,14 @@ class KeyboardInterface(object):
         self.streaming = False
         self.rate_control = False
         self.rc_changed = False
+        self.offsets_changed = False
         self.ref_changed = False
         self.rate_changed = False    
         self.pinging = False        
         
     def process(self, c):
     
-        if c not None
+        if c != None:
             self.__handleKey(c)
             
         if self.pinging:
@@ -137,15 +138,11 @@ class KeyboardInterface(object):
             self.comm.setRegulatorRateFilter( self.yaw_filter_coeffs )
             self.comm.setTelemetrySubsample(1)
         elif c == ']':
-            #self.thrust.increase()
-            #self.rc_changed = True
-            self.roll_coeffs[1] += 0.025
-            print "Thrust: " + str(self.roll_coeffs[1])
+            self.thrust.increase()
+            self.offsets_changed = True                        
         elif c == '[':
-            #self.thrust.decrease()
-            #self.rc_changed = True
-            self.roll_coeffs[1] = self.roll_coeffs[1] - 0.025
-            print "Thrust: " + str(self.roll_coeffs[1])
+            self.thrust.decrease()
+            self.offsets_changed = True            
         elif c == '\x1b': #Esc key
             #break
             raise Exception('Exit')
@@ -153,6 +150,10 @@ class KeyboardInterface(object):
         if self.rc_changed:        
             self.comm.setRemoteControlValues( self.thrust.value(), self.steer.value(), self.elevator.value() );             
             self.rc_changed = False
+            
+        if self.offsets_changed:
+            self.comm.setRegulatorOffsets((self.steer.value(), self.elevator.value(), self.thrust.value()))
+            self.offsets_changed = False
             
         if self.rate_changed:
             self.comm.setGlobalRateSlew( ( self.yaw_rate.value(), self.pitch_rate.value(), self.roll_rate.value() ) )
@@ -219,7 +220,7 @@ def loop():
         try:
             c = None
             if( msvcrt.kbhit() ):
-                c = msvcrt.getch()
+               c = msvcrt.getch()
             kbint.process(c)
             time.sleep(0.01)
             #comm.sendPing()
