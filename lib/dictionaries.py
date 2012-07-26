@@ -52,9 +52,10 @@ RegulatorStates = {
 }
 
 Commands = {	
-    'PING':0x1E,
-    'ECHO':0x1F,      # send back the received packet
+    'PING':0x12,
+    'ECHO':0x13,      # send back the received packet
 
+    'SET_REGULATOR_OFFSETS':0x20,
 	'SET_REGULATOR_MODE':0x21,
 	'SET_REGULATOR_REF':0x22,
 	'SET_REGULATOR_PID':0x23,
