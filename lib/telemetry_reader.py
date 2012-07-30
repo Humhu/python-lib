@@ -5,6 +5,7 @@ from xbee import XBee
 from payload import Payload
 from dictionaries import *
 from command_interface import CommandInterface
+from quaternion import *
 from bams import *
 
 class TelemetryReader(object):
@@ -153,10 +154,14 @@ class TelemetryReader(object):
             # err = raw[9:13]
             # u = raw[13:16]
             
+            euler = quaternionToEuler(x)
+            
             if(self.cprint == True):
                 print "Timestamp: " + str(timestamp)
                 print "Ref: " + str(ref)
-                print "X: " + str(x)
+                print "X: " + str(x)                
+                print "X Euler Yaw: " + str(degrees(euler[0])) + " Pitch: " + \
+                        str(degrees(euler[1])) + " Roll: " + str(degrees(euler[2]))
                 print "Err: " + str(err)
                 print "U: " + str(u)
                 print "ED: " + str(ed) + " RSSI: " + str(rssi)               
@@ -166,7 +171,7 @@ class TelemetryReader(object):
                 self.file.write(str(ref[0]) + "\t" + str(ref[1]) + "\t" + \
                                 str(ref[2]) + "\t" + str(ref[3]) + "\t")
                 self.file.write(str(x[0]) + "\t" + str(x[1]) + "\t" + \
-                                str(x[2]) + "\t" + str(x[3]) + "\t")
+                                str(x[2]) + "\t" + str(x[3]) + "\t")                
                 self.file.write(str(err[0]) + "\t" + str(err[1]) + "\t" + \
                                 str(err[2]) + "\t" + str(err[3]) + "\t")
                 self.file.write(str(u[0]) + "\t" + str(u[1]) + "\t" + \
