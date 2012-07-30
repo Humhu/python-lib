@@ -80,6 +80,21 @@ class CommandInterface(object):
         pld = Payload(data = data_pack, status = 0, type = Commands['SET_BACKGROUND_FRAME'])
         self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
         
+    def rotateRefGlobal(self, rotation):
+        data_pack = pack(4*'f', *rotation)
+        if self.debugPrint:
+            print "Applying rotation to reference in global axes: " + str(rotation)
+        pld = Payload(data = data_pack, status = 0, type = Commands['ROTATE_REF_GLOBAL'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+        
+    def rotateRefLocal(self, rotation):
+        data_pack = pack(4*'f', *rotation)
+        if self.debugPrint:
+            print "Applying rotation to reference in local axes: " + str(rotation)
+        pld = Payload(data = data_pack, status = 0, type = Commands['ROTATE_REF_LOCAL'])
+        self.tx_callback(dest = self.endpoint_addr, packet = str(pld))
+        
+        
     def setRegulatorOffsets(self, offsets):
         data_pack = pack(3*'f', *offsets)
         if self.debugPrint:

@@ -55,6 +55,8 @@ Commands = {
     'PING':0x12,
     'ECHO':0x13,      # send back the received packet
 
+    'ROTATE_REF_GLOBAL':0x18,
+    'ROTATE_REF_LOCAL':0x19,
     'SET_REGULATOR_OFFSETS':0x20,
 	'SET_REGULATOR_MODE':0x21,
 	'SET_REGULATOR_REF':0x22,
