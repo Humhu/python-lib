@@ -55,7 +55,7 @@ class KeyboardInterface(object):
         self.thrust = IncrementCounter( start_value = 0.0, range = (1.0, 0.0), increment = 0.025 )
         self.steer = IncrementCounter( start_value = 0.0, range = (1.0, -1.0), increment = 0.05 )        
         # PID constants        
-        self.yaw_coeffs = [ 0.0,    0.0,    -2.0,   -0.0,    -0.2,    1.0,    1.0] # For steer Ki 0.8
+        self.yaw_coeffs = [ 0.0,    0.0,    -2.0,   -0.8,    -0.4,    1.0,    1.0] # For steer Ki 0.8
         self.pitch_coeffs = [ 0.0,    0.0,    3.0,   0.0,    0.2,    1.0,    1.0] # For elevator
         self.roll_coeffs = [ 0.0,    0.0,    -0.2,   0.0,    0.0,    1.0,    1.0] # For thrust 
         self.yaw_filter_coeffs = [ 3, 0, 0.0007, 0.0021, 0.0021, 0.0007, 1.0, 2.6861573965, -2.419655111, 0.7301653453]
@@ -82,20 +82,24 @@ class KeyboardInterface(object):
         # Reference commands
         if c == 'w':
             self.pitch.increase()
+            # self.comm.rotateRefLocal(quatGenerate(radians(10), (0,1,0)))
             self.ref_changed = True
         elif c == 's':
             self.pitch.decrease()
+            # self.comm.rotateRefLocal(quatGenerate(radians(-10), (0,1,0)))
             self.ref_changed = True
         elif c == 'a':
-            self.yaw.decrease()
-            self.ref_changed = True
-            # self.yaw_rate.decrease()                
-            # self.rate_changed = True
+            # self.yaw.decrease()
+            # self.ref_changed = True
+            # self.comm.rotateRefGlobal(quatGenerate(radians(-10), (0,0,1)))
+            self.yaw_rate.decrease()                
+            self.rate_changed = True
         elif c == 'd':
-            self.yaw.increase()
-            self.ref_changed = True
-            # self.yaw_rate.increase()            
-            # self.rate_changed = True
+            # self.yaw.increase()
+            # self.ref_changed = True
+            # self.comm.rotateRefGlobal(quatGenerate(radians(10), (0,0,1)))
+            self.yaw_rate.increase()            
+            self.rate_changed = True
         elif c == 'q':
             self.roll.increase()
             self.ref_changed = True
@@ -125,7 +129,8 @@ class KeyboardInterface(object):
             self.rate_control = not self.rate_control           
             self.comm.setRateMode(self.rate_control)                        
         elif c == '0':
-            self.pinging = not self.pinging
+            #self.pinging = not self.pinging
+            self.comm.setRegulatorRef((1.0, 0.0, 0.0, 0.0))
             
         # Attitude
         elif c == 'c':
@@ -213,7 +218,7 @@ def loop():
     telem.writeHeader()
     coord.resume()
     
-    comm.setSlewLimit(1.0)
+    comm.setSlewLimit(3.0)
     
     while True:
 
@@ -224,7 +229,7 @@ def loop():
             kbint.process(c)
             time.sleep(0.01)
             #comm.sendPing()
-    
+
         except:        
             break
             
@@ -238,6 +243,9 @@ if __name__ == '__main__':
     try:        
         loop()
         
-    except e:
+    except Exception as e:
         print e
         
+    finally:
+        #Add cleanup code!
+        pass
